@@ -3,103 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nafis Foods | Seller Dashboard</title>
+    <title>Nafis Foods | Admin Panel</title>
     <link class="icon" type="image/jpeg" href="logo.jpg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --gold: #D4AF37; --dark: #1a1a1a; --bg: #f5f7fb; --white: #ffffff; --red: #d9534f; --blue: #0275d8; --green: #5cb85c; }
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--bg); color: #333; padding-bottom: 50px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background-color: var(--bg); color: #333; }
         
-        .top-nav { background: var(--dark); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; color: var(--gold); }
-        .brand-box { display: flex; align-items: center; gap: 12px; }
-        .brand-box h1 { margin: 0; font-size: 1.3rem; line-height: 1.1; font-weight: 700; }
-        .cloud-status { border: 1px solid var(--gold); border-radius: 20px; padding: 5px 12px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
+        /* PIN Overlay */
+        #pin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--gold); }
+        #pin-input { padding: 15px; font-size: 2rem; width: 160px; text-align: center; border-radius: 10px; border: none; margin-top: 20px; letter-spacing: 5px; outline: none; }
 
-        .dashboard-container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+        .top-nav { background: var(--dark); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; color: var(--gold); position: sticky; top: 0; z-index: 100; }
+        .dashboard-container { max-width: 600px; margin: 20px auto; padding: 0 15px; display: none; }
 
-        .earnings-banner { background: var(--dark); color: var(--gold); border-radius: 15px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .earnings-banner .amount { font-size: 1.8rem; font-weight: bold; }
+        .earnings-banner { background: var(--dark); color: var(--gold); border-radius: 15px; padding: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .amount { font-size: 2rem; font-weight: bold; }
 
         .status-section { background: var(--white); border-radius: 15px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .status-header { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-top: 5px solid transparent; }
-        .count-badge { background: #fdf6e8; color: #b58d13; padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; }
+        .status-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-top: 5px solid #ccc; }
+        .count-badge { background: #eee; padding: 2px 10px; border-radius: 12px; font-size: 0.85rem; }
         
-        .sec-pending .status-header { border-color: #ffc107; }
-        .sec-cooking .status-header { border-color: var(--blue); }
-        .sec-ready .status-header { border-color: var(--green); }
-        .sec-history .status-header { border-color: #6c757d; }
+        /* Form Styling */
+        .admin-form { padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #fff; }
+        .admin-form input, .admin-form select { padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; }
 
-        .order-mini-card { border: 1px solid #eee; border-radius: 10px; padding: 15px; margin: 10px; }
-        .cust-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
-        .item-line { font-size: 0.9rem; padding: 3px 0; border-bottom: 1px dashed #f0f0f0; }
+        /* Order Cards */
+        .order-mini-card { border: 1px solid #eee; border-radius: 10px; padding: 15px; margin: 10px; background: #fff; }
+        .action-group { display: flex; gap: 8px; margin-top: 12px; }
+        .btn { flex: 1; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-cancel { background: var(--red); }
+        .btn-accept { background: var(--blue); }
+        .btn-ready { background: var(--gold); color: #000; }
+        .btn-complete { background: var(--green); }
 
-        /* Action Buttons Styling */
-        .action-group { display: flex; gap: 10px; margin-top: 15px; }
-        .btn { flex: 1; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .btn-cancel { background-color: var(--red); }
-        .btn-accept { background-color: var(--blue); }
-        .btn-ready { background-color: var(--gold); color: var(--dark); }
-        .btn-complete { background-color: var(--green); }
-        .btn:active { transform: scale(0.96); }
+        /* Inventory Toggles */
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid #eee; }
+        .toggle-switch { position: relative; width: 45px; height: 22px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background: var(--green); }
+        input:checked + .slider:before { transform: translateX(23px); }
 
-        .proof-btn { background: #f0f7ff; color: var(--blue); border: 1px solid #cce5ff; padding: 8px; border-radius: 6px; width: 100%; margin-top: 10px; font-weight: bold; cursor: pointer; }
+        /* Reviews */
+        .review-card { background: white; border-radius: 12px; padding: 15px; margin-top: 10px; border-left: 5px solid var(--gold); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .reply-box { width: 100%; margin-top: 10px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
 
-        .review-card { background: white; border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 5px solid var(--gold); }
-        .reply-area { width: 100%; margin-top: 10px; padding: 8px; border-radius: 8px; border: 1px solid #ddd; resize: none; box-sizing: border-box;}
-        .reply-btn { background: var(--dark); color: var(--gold); border: none; padding: 8px 15px; border-radius: 6px; margin-top: 5px; cursor: pointer; font-weight: bold; }
-
-        #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; justify-content: center; align-items: center; }
-        #lightbox img { max-width: 90%; max-height: 80%; border-radius: 10px; }
+        #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; justify-content: center; align-items: center; }
+        #lightbox img { max-width: 90%; max-height: 80%; border: 3px solid var(--gold); }
     </style>
 </head>
 <body>
 
-<div class="top-nav">
-    <div class="brand-box"><h1>Nafis Foods |<br>Seller Dashboard</h1></div>
-    <div class="cloud-status"><i class="fas fa-sync-alt"></i><span>Connected</span></div>
+<div id="pin-overlay">
+    <i class="fas fa-shield-alt" style="font-size: 3rem; margin-bottom: 10px;"></i>
+    <h2>Nafis Foods Admin</h2>
+    <input type="password" id="pin-input" maxlength="4" placeholder="••••" autofocus>
+    <p style="font-size: 0.8rem; opacity: 0.6; margin-top: 15px;">Enter 4-digit PIN to unlock</p>
 </div>
 
-<div class="dashboard-container">
+<div class="top-nav">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <i class="fas fa-user-tie"></i>
+        <strong>Seller Panel</strong>
+    </div>
+    <div id="status-dot"><i class="fas fa-circle" style="color: #28a745;"></i> Live</div>
+</div>
+
+<div class="dashboard-container" id="main-dash">
+    
     <div class="earnings-banner">
-        <div><h2>Total Earned</h2><div class="amount">$<span id="total-earnings">0</span></div></div>
-        <i class="fas fa-wallet" style="font-size: 2rem; opacity: 0.3;"></i>
+        <div>
+            <h3 style="margin:0; font-size: 0.9rem; text-transform:uppercase;">Total Revenue</h3>
+            <div class="amount">$<span id="total-earnings">0</span></div>
+        </div>
+        <i class="fas fa-chart-line" style="font-size: 2rem; opacity: 0.3;"></i>
     </div>
 
-    <div class="status-section sec-pending">
+    <div class="status-section">
+        <div class="status-header" style="border-color: var(--dark);">Manage Menu & Stock</div>
+        <div class="admin-form">
+            <input type="text" id="new-item-name" placeholder="Item Name (e.g. Seekh Kabab)">
+            <input type="number" id="new-item-price" placeholder="Price ($)">
+            <select id="new-item-cat">
+                <option value="Main Dish">Main Dish</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Dessert">Dessert</option>
+            </select>
+            <button class="btn btn-accept" onclick="addItem()"><i class="fas fa-plus"></i> Add to Menu</button>
+        </div>
+        <div id="inventory-list" style="max-height: 300px; overflow-y: auto;">
+            </div>
+    </div>
+
+    <div class="status-section" style="border-color: #ffc107;">
         <div class="status-header">New Pending <span class="count-badge" id="count-pending">0</span></div>
         <div id="list-pending"></div>
     </div>
 
-    <div class="status-section sec-cooking">
-        <div class="status-header">Cooking / Kitchen <span class="count-badge" id="count-preparing">0</span></div>
+    <div class="status-section" style="border-color: var(--blue);">
+        <div class="status-header">In Kitchen <span class="count-badge" id="count-preparing">0</span></div>
         <div id="list-preparing"></div>
     </div>
 
-    <div class="status-section sec-ready">
+    <div class="status-section" style="border-color: var(--green);">
         <div class="status-header">Ready for Pickup <span class="count-badge" id="count-ready">0</span></div>
         <div id="list-ready"></div>
     </div>
 
-    <div class="status-section sec-history">
+    <div class="status-section" style="border-color: #6c757d;">
         <div class="status-header">Completed History <span class="count-badge" id="count-completed">0</span></div>
         <div id="list-completed"></div>
     </div>
 
-    <h2 style="margin-top: 30px; font-size: 1.2rem;">Customer Reviews</h2>
-    <div id="admin-reviews-list"></div>
+    <h3 style="margin-top: 30px;"><i class="fas fa-star" style="color:var(--gold);"></i> Customer Reviews</h3>
+    <div id="reviews-list"></div>
+
 </div>
 
 <div id="lightbox" onclick="this.style.display='none'"><img id="lb-img" src=""></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-    import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+    import { getDatabase, ref, onValue, update, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyC0Ugl8OiCZwWKr2PkgztZKALdEz-gmLSY",
         authDomain: "nafis-foods.firebaseapp.com",
         projectId: "nafis-foods",
+        databaseURL: "https://nafis-foods-default-rtdb.firebaseio.com",
         storageBucket: "nafis-foods.firebasestorage.app",
         messagingSenderId: "856645833481",
         appId: "1:856645833481:web:f18f1d582b280d083239d8"
@@ -107,17 +140,54 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const messaging = getMessaging(app);
 
-    // Notifications
-    async function setupNotifications() {
-        if (Notification.permission === 'granted') {
-            const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            await getToken(messaging, { vapidKey: "BFx1PxB2B1nHzQ5Zpz8bBaIQj5qMs3HXZ_dIgnyDHqbQC-biOOfjhMSTru-DtPB8ENUDZornXJjyXASSL3HL4ok", serviceWorkerRegistration: reg });
+    // PIN Logic
+    document.getElementById('pin-input').addEventListener('input', (e) => {
+        if(e.target.value === '1234') {
+            document.getElementById('pin-overlay').style.display = 'none';
+            document.getElementById('main-dash').style.display = 'block';
         }
-    }
-    setupNotifications();
+    });
 
+    // 1. Inventory Functions
+    window.addItem = () => {
+        const name = document.getElementById('new-item-name').value;
+        const price = document.getElementById('new-item-price').value;
+        const cat = document.getElementById('new-item-cat').value;
+        if(name && price) {
+            set(ref(db, 'menu/' + name), { name, price: parseFloat(price), category: cat, available: true });
+            document.getElementById('new-item-name').value = "";
+            document.getElementById('new-item-price').value = "";
+        }
+    };
+
+    onValue(ref(db, 'menu'), (snap) => {
+        const list = document.getElementById('inventory-list');
+        list.innerHTML = "";
+        const data = snap.val();
+        if(!data) return;
+        Object.keys(data).forEach(key => {
+            const item = data[key];
+            const div = document.createElement('div');
+            div.className = 'inv-item';
+            div.innerHTML = `
+                <span><strong>${item.name}</strong> ($${item.price})</span>
+                <div style="display:flex; gap:15px; align-items:center;">
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${item.available ? 'checked' : ''} onchange="updateItem('${key}', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                    <i class="fas fa-trash-alt" style="color:var(--red); cursor:pointer;" onclick="deleteItem('${key}')"></i>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    });
+
+    window.updateItem = (key, status) => update(ref(db, 'menu/' + key), { available: status });
+    window.deleteItem = (key) => confirm("Delete this item?") && remove(ref(db, 'menu/' + key));
+
+    // 2. Orders Handling
     onValue(ref(db, 'orders'), (snap) => {
         const data = snap.val();
         const lists = { pending: [], preparing: [], ready: [], completed: [] };
@@ -131,7 +201,7 @@
                 if (s === 'completed' && o.items) Object.values(o.items).forEach(i => earnings += (i.price * i.qty));
             });
         }
-        document.getElementById('total-earnings').innerText = earnings;
+        document.getElementById('total-earnings').innerText = earnings.toFixed(2);
         ['pending', 'preparing', 'ready', 'completed'].forEach(s => renderOrders(s, lists[s]));
     });
 
@@ -143,47 +213,42 @@
         orders.reverse().forEach(o => {
             const card = document.createElement('div');
             card.className = 'order-mini-card';
-            let itemsHtml = "";
-            if (o.items) Object.values(o.items).forEach(i => itemsHtml += `<div class="item-line"><strong>${i.qty}x</strong> ${i.name}</div>`);
+            let items = "";
+            if (o.items) Object.values(o.items).forEach(i => items += `<div>• ${i.qty}x ${i.name}</div>`);
 
-            // Logic to show specific buttons based on status
-            let actionButtons = "";
+            let buttons = "";
             if (status === 'pending') {
-                actionButtons = `
-                    <div class="action-group">
-                        <button class="btn btn-cancel" onclick="updateStatus('${o.dbKey}','cancelled')"><i class="fas fa-times"></i> Cancel</button>
-                        <button class="btn btn-accept" onclick="updateStatus('${o.dbKey}','preparing')"><i class="fas fa-check"></i> Accept Order</button>
-                    </div>`;
+                buttons = `<div class="action-group">
+                    <button class="btn btn-cancel" onclick="setStatus('${o.dbKey}','cancelled')">Reject</button>
+                    <button class="btn btn-accept" onclick="setStatus('${o.dbKey}','preparing')">Accept</button>
+                </div>`;
             } else if (status === 'preparing') {
-                actionButtons = `
-                    <div class="action-group">
-                        <button class="btn btn-ready" onclick="updateStatus('${o.dbKey}','ready')"><i class="fas fa-utensils"></i> Ready for Pickup</button>
-                    </div>`;
+                buttons = `<button class="btn btn-ready" style="width:100%; margin-top:10px;" onclick="setStatus('${o.dbKey}','ready')">Ready</button>`;
             } else if (status === 'ready') {
-                actionButtons = `
-                    <div class="action-group">
-                        <button class="btn btn-complete" onclick="updateStatus('${o.dbKey}','completed')"><i class="fas fa-flag-checkered"></i> Mark Completed</button>
-                    </div>`;
+                buttons = `<button class="btn btn-complete" style="width:100%; margin-top:10px;" onclick="setStatus('${o.dbKey}','completed')">Done</button>`;
             }
 
             card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#888;"><span>#${o.id}</span><span>${o.time}</span></div>
-                <div class="cust-name">${o.name}</div>
-                <div style="font-size:0.85rem;"><i class="fas fa-phone"></i> ${o.phone}</div>
-                <div style="margin:10px 0;">${itemsHtml}</div>
-                ${o.proofImage ? `<button class="proof-btn" onclick="openProof('${o.proofImage}')">View Payment Proof</button>` : ''}
-                ${actionButtons}
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#888;"><span>#${o.id}</span><span>${o.time}</span></div>
+                <div style="font-weight:bold; font-size:1.1rem; margin:5px 0;">${o.name}</div>
+                <div style="font-size:0.85rem; margin-bottom:8px;"><i class="fas fa-phone"></i> ${o.phone}</div>
+                <div style="background:#f9f9f9; padding:8px; border-radius:6px; font-size:0.9rem;">${items}</div>
+                ${o.proofImage ? `<button class="btn" style="background:#eee; color:#333; margin-top:10px; font-size:0.8rem;" onclick="viewImg('${o.proofImage}')">View Receipt</button>` : ''}
+                ${buttons}
             `;
             container.appendChild(card);
         });
     }
 
-    // Reviews Stream
+    window.setStatus = (key, s) => update(ref(db, `orders/${key}`), { status: s });
+    window.viewImg = (src) => { document.getElementById('lb-img').src = src; document.getElementById('lightbox').style.display = 'flex'; };
+
+    // 3. Reviews
     onValue(ref(db, 'reviews'), (snap) => {
-        const container = document.getElementById('admin-reviews-list');
-        container.innerHTML = "";
+        const list = document.getElementById('reviews-list');
+        list.innerHTML = "";
         const data = snap.val();
-        if (!data) return;
+        if(!data) return;
         Object.keys(data).reverse().forEach(key => {
             const r = data[key];
             const div = document.createElement('div');
@@ -191,19 +256,17 @@
             div.innerHTML = `
                 <div style="display:flex; justify-content:space-between;"><strong>${r.name}</strong><span>${r.stars}★</span></div>
                 <p style="font-size:0.9rem; margin:5px 0;">"${r.comment}"</p>
-                ${r.adminReply ? `<div style="background:#eee; padding:5px; font-size:0.8rem; border-radius:4px;"><strong>You:</strong> ${r.adminReply}</div>` : ''}
-                <textarea class="reply-area" id="rep-${key}" placeholder="Reply to customer..."></textarea>
-                <button class="reply-btn" onclick="sendReply('${key}')">Post Reply</button>
+                ${r.adminReply ? `<div style="background:#f0f0f0; padding:5px; font-size:0.8rem; border-radius:4px;"><strong>Reply:</strong> ${r.adminReply}</div>` : ''}
+                <textarea class="reply-box" id="rep-${key}" placeholder="Type reply..."></textarea>
+                <button class="btn btn-accept" style="width:auto; padding:5px 15px; margin-top:5px; font-size:0.8rem;" onclick="saveReply('${key}')">Post Reply</button>
             `;
-            container.appendChild(div);
+            list.appendChild(div);
         });
     });
 
-    window.updateStatus = (key, s) => update(ref(db, `orders/${key}`), { status: s });
-    window.openProof = (src) => { document.getElementById('lb-img').src = src; document.getElementById('lightbox').style.display = 'flex'; };
-    window.sendReply = (key) => {
-        const t = document.getElementById(`rep-${key}`).value;
-        if(t) update(ref(db, `reviews/${key}`), { adminReply: t }).then(() => alert("Reply posted!"));
+    window.saveReply = (key) => {
+        const val = document.getElementById(`rep-${key}`).value;
+        if(val) update(ref(db, `reviews/${key}`), { adminReply: val }).then(() => alert("Reply posted!"));
     };
 </script>
 </body>
