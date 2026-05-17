@@ -169,6 +169,7 @@
         .proof-box { background: #fdfaf2; border: 1px dashed var(--gold); border-radius: 12px; padding: 12px; margin-bottom: 15px; text-align: center; }
         .file-input-wrapper { margin-top: 8px; position: relative; display: inline-block; width: 100%; }
         .file-input-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+        .file-input-wrapper:hover .file-input-btn { border-color: var(--gold); background: #fffdf7; }
         .file-input-btn { background: #fff; border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: bold; color: #555; width: 100%; box-sizing: border-box; justify-content: center; transition: 0.2s; }
         #proof-preview-container { display: none; margin-top: 10px; align-items: center; justify-content: center; gap: 10px; background: white; padding: 6px; border-radius: 6px; border: 1px solid #eee; }
         #proof-preview-img { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; }
@@ -194,6 +195,7 @@
 </header>
 
 <div class="container">
+    <!-- CATERING BOX -->
     <div class="catering-box">
         <h3><i class="fas fa-utensils"></i> Catering & Decoration Services</h3>
         <p>Planning an event? Pick your services and select a date below to inquire.</p>
@@ -213,6 +215,7 @@
         </div>
     </div>
 
+    <!-- DAILY MENU NOTICES -->
     <div class="menu-separator-banner">
         <h2><i class="fas fa-clipboard-list" style="color: var(--gold);"></i> Regular Daily Menu</h2>
         <p>Add items below to place your regular everyday order instantly!</p>
@@ -238,6 +241,7 @@
     <h2 class="section-title"><i class="fas fa-bread-slice"></i> Fresh Roti & Naan</h2>
     <div class="menu-list" id="roti-list"></div>
 
+    <!-- FEEDBACK SECTION -->
     <div class="feedback-form-box">
         <h3><i class="fas fa-pen-fancy"></i> Share Your Feedback</h3>
         <p style="font-size: 0.88rem; color:#666; margin: -5px 0 10px 0;">Your review will display directly on our seller kitchen panel dashboard!</p>
@@ -254,6 +258,7 @@
     </div>
 </div>
 
+<!-- LIVE ORDER TRACKING SCREEN -->
 <div id="tracking-screen">
     <div class="tracking-box-card">
         <h2 style="color: var(--gold); margin-top: 0; letter-spacing: 1px;">LIVE ORDER TRACKING</h2>
@@ -338,6 +343,7 @@
     <img id="lightbox-img" src="" alt="Enlarged Picture">
 </div>
 
+<!-- CLOUD GATEWAY CONFIG -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -458,6 +464,7 @@
         { name: "Chicken Pulao", price: 13, cat: "rice", note: "Per Serving", desc: "Mildly spiced rice cooked slowly in a rich chicken broth. Serving size: 1 pack per person (Includes 2 pcs of chicken)." },
         { name: "Mutton Qabli Pulao", price: 25, cat: "rice", note: "Per Serving", desc: "Authentic Afghan style rice topped with julienne carrots, raisins, and tender mutton chunks. Serving size: 1 pack per person." },
         { name: "Chicken Qabli Pulao", price: 17, cat: "rice", note: "Per Serving", desc: "Aromatic Afghan rice with sweet fried carrots and raisins. Serving size: 1 pack per person (Includes 2 pcs of chicken)." },
+        { name: "Mix Vege Fried Rice", price: 12, cat: "rice", note: "Per Serving", desc: "Wok-tossed premium basmati rice scrambled with crisp seasonal garden vegetables and light house sauces." },
         { name: "Boiled Rice", price: 5, cat: "rice", note: "Per Serving", desc: "Fluffy, premium long-grain steamed white basmati rice. Serving size: 1 pack container per person." },
         { name: "Tarke Wale Chawal", price: 6, cat: "rice", note: "Per Plate", desc: "Flavorful basmati rice tempered with a traditional tadka of onions and cumin. Serving size: 1 pack container per person." },
         
@@ -475,6 +482,7 @@
         { name: "Zinger Roll", price: 13, cat: "snacks", note: "", desc: "Crispy fried zinger strips wrapped neatly in a soft flatbread with house sauces and fresh onions." },
         { name: "Shawarma", price: 13, cat: "snacks", note: "", desc: "Shredded seasoned chicken wrapped in warm pita bread with garlic sauce, mayo, and crunchy pickles." },
         { name: "Pakora", price: 10, cat: "snacks", note: "One Plate", desc: "Crispy, golden-fried vegetable fritters made in a seasoned chickpea flour batter." },
+        { name: "Alo Tikki", price: 5, cat: "snacks", note: "Per Serving", desc: "Crispy, golden pan-fried potato patties seasoned with traditional herbs and aromatic ground spices." },
         { name: "Raaiyta / Salad", price: 5, cat: "snacks", note: "", desc: "Cool whipped yogurt mixed with roasted cumin, paired with a crisp garden salad layout." },
         
         { name: "White Chickpeas", price: 6, cat: "salan", note: "Per Plate", desc: "Tender chickpeas simmered smoothly in a rich, tangy, and deeply spiced onion-tomato gravy." },
@@ -511,6 +519,7 @@
                     </div>
                     <div class="item-details">
                         <div class="item-info">
+                            // Using standard bold formatting instead of LaTeX for plain text values
                             <strong>${item.name}</strong>
                             <small>$${item.price} ${item.note}</small>
                             <p class="item-desc">${item.desc}</p>
