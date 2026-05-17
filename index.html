@@ -98,7 +98,7 @@
         .time-notice-tag strong { color: #b58d13; }
 
         #lightbox { display: none; position: fixed; z-index: 4000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; cursor: pointer; }
-        #lightbox img { max-width: 90%; max-height: 90%; border: 3px solid var(--gold); border-radius: 8px; }
+        #lightbox img { max-width: 90%; max-height: 90%; border-radius: 8px; border: 3px solid var(--gold); }
         #lightbox-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
 
         .feedback-form-box { background: #fffdf9; border: 2px solid var(--gold); border-radius: 15px; padding: 25px; margin: 50px auto 20px auto; max-width: 600px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); text-align: center; }
@@ -120,6 +120,10 @@
         .review-stars { color: var(--gold); font-size: 0.85rem; }
         .review-comment { font-size: 0.88rem; color: #555; margin: 0; line-height: 1.4; font-style: italic; }
         .no-reviews-msg { text-align: center; color: #888; font-size: 0.9rem; font-style: italic; }
+
+        /* Verified Admin Response Flag Style */
+        .admin-reply-bubble { margin-top: 10px; margin-left: 15px; padding: 10px; background: #fffaf0; border-left: 3px solid var(--gold); border-radius: 4px; font-size: 0.85rem; display: flex; flex-direction: column; gap: 2px; }
+        .admin-reply-title { font-weight: bold; color: var(--dark); display: flex; align-items: center; gap: 6px; }
 
         #tracking-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; text-align: center; }
         .tracking-box-card { background: #fafafa; border: 1px solid #eee; border-radius: 20px; padding: 30px; max-width: 450px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
@@ -282,7 +286,7 @@
     </div>
 </div>
 
-<div id="lightbox" onclick="closeLightbox()"><span id="lightbox-close">&times;</span><img id="lightbox-img" src=""></div>
+<div id="lightbox" onclick="this.style.display='none'"><span id="lightbox-close">&times;</span><img id="lightbox-img" src=""></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -293,6 +297,7 @@
         apiKey: "AIzaSyC0Ugl8OiCZwWKr2PkgztZKALdEz-gmLSY",
         authDomain: "nafis-foods.firebaseapp.com",
         projectId: "nafis-foods",
+        databaseURL: "https://nafis-foods-default-rtdb.firebaseio.com",
         storageBucket: "nafis-foods.firebasestorage.app",
         messagingSenderId: "856645833481",
         appId: "1:856645833481:web:f18f1d582b280d083239d8"
@@ -304,38 +309,88 @@
 
     let customerPushToken = "";
 
-    // Automatically prompt permission right away on page load
     async function initPushNotifications() {
         try {
             if (Notification.permission === 'default') {
                 const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    setupServiceWorkerAndToken();
-                }
+                if (permission === 'granted') setupServiceWorkerAndToken();
             } else if (Notification.permission === 'granted') {
                 setupServiceWorkerAndToken();
             }
-        } catch (err) { console.log("Notification token sequence skipped:", err); }
+        } catch (err) { console.log("Push system offline"); }
     }
 
     async function setupServiceWorkerAndToken() {
         const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         customerPushToken = await getToken(messaging, { 
-            vapidKey: "BFx1PxB2B1nHzQ5Zpz8bBaIQj5qMs3HXZ_dIgnyDHqbQC-biOOfjhMSTru-DtPB8ENUDZornXJjyXASSL3HL4ok", // <-- PASTE YOUR COPIED VAPID KEY HERE
+            vapidKey: "BFx1PxB2B1nHzQ5Zpz8bBaIQj5qMs3HXZ_dIgnyDHqbQC-biOOfjhMSTru-DtPB8ENUDZornXJjyXASSL3HL4ok",
             serviceWorkerRegistration: reg 
         });
     }
-
     window.addEventListener('load', initPushNotifications);
 
+    // --- 1. DYNAMIC REALTIME SYSTEM INVENTORY LOADER ENGINE ---
+    onValue(ref(db, 'menu'), (snap) => {
+        const data = snap.val();
+        const categories = ['rice', 'daal', 'snacks', 'salan', 'roti'];
+        categories.forEach(cat => {
+            const el = document.getElementById(`${cat}-list`);
+            if(el) el.innerHTML = "";
+        });
+
+        if(!data) return;
+
+        Object.keys(data).forEach((key, index) => {
+            const item = data[key];
+            if(item.available === false) return; // Completely auto-hides item if toggled off
+
+            const listContainer = document.getElementById(`${item.category.toLowerCase()}-list`);
+            if(listContainer) {
+                const div = document.createElement('div');
+                div.className = 'menu-card';
+                let picUrl = item.name.includes('/') ? item.name.replace(/\s*\/\s*/g, '+') : item.name.replace(/ /g, '%20');
+                picUrl += '.jpg';
+
+                const itemNameLower = item.name.toLowerCase();
+                const needsSpice = !(itemNameLower.includes("raaiyta") || itemNameLower.includes("boiled rice") || itemNameLower === "simple naan" || itemNameLower.includes("roghni naan") || itemNameLower.includes("roti"));
+
+                div.innerHTML = `
+                    <div class="item-pic-box" onclick="enlargeImage('${picUrl}')"><img src="${picUrl}" onerror="handlePicError(this)"></div>
+                    <div class="item-details">
+                        <div class="item-info"><strong>${item.name}</strong><small>$${item.price}</small></div>
+                        ${needsSpice ? `<select class="spice-select-box" id="spice-select-${index}"><option value="Medium">Medium Spice</option><option value="Mild">Mild Spice</option><option value="Spicy">Spicy Kick</option></select>` : ''}
+                        <button class="add-btn" onclick="addToCartWithSpice('${item.name}', ${item.price}, ${index}, ${needsSpice})">+ Add</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            }
+        });
+    });
+
+    // --- 2. LIVE REVIEWS & INTERACTIVE SELLER REPLIES STREAM ---
     onValue(ref(db, 'reviews'), (snapshot) => {
         const listDiv = document.getElementById('public-reviews-list'); listDiv.innerHTML = "";
         const data = snapshot.val();
         if (!data) { listDiv.innerHTML = `<div class="no-reviews-msg">No reviews yet.</div>`; return; }
         Object.keys(data).map(k => data[k]).reverse().forEach(item => {
             let stars = ""; for(let i=1; i<=5; i++) stars += `<i class="${i <= item.stars ? 'fas' : 'far'} fa-star"></i>`;
+            
+            let adminReplyHtml = "";
+            if (item.adminReply) {
+                adminReplyHtml = `
+                    <div class="admin-reply-bubble">
+                        <div class="admin-reply-title"><i class="fas fa-reply fa-flip-horizontal"></i> Nafis Foods Response</div>
+                        <div style="color: #444; font-style: normal;">${escapeHTML(item.adminReply)}</div>
+                    </div>
+                `;
+            }
+
             const rCard = document.createElement('div'); rCard.className = 'review-card-item';
-            rCard.innerHTML = `<div class="review-header-row"><span class="review-name">${escapeHTML(item.name)}</span><span class="review-stars">${stars}</span></div><p class="review-comment">"${escapeHTML(item.comment)}"</p>`;
+            rCard.innerHTML = `
+                <div class="review-header-row"><span class="review-name">${escapeHTML(item.name)}</span><span class="review-stars">${stars}</span></div>
+                <p class="review-comment">"${escapeHTML(item.comment)}"</p>
+                ${adminReplyHtml}
+            `;
             listDiv.appendChild(rCard);
         });
     });
@@ -349,14 +404,7 @@
         const timeString = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
         const orderPayload = {
-            id: newOrderId,
-            name: name,
-            phone: phone,
-            items: cart,
-            proofImage: proofBase64,
-            status: 'pending',
-            time: timeString,
-            clientToken: customerPushToken // Saves token so backend/dashboard can trigger status push notifications
+            id: newOrderId, name: name, phone: phone, items: cart, proofImage: proofBase64, status: 'pending', time: timeString, clientToken: customerPushToken
         };
 
         let itemsSummary = ""; let finalBill = 0;
@@ -406,70 +454,10 @@
 </script>
 
 <script>
-    const menu = [
-        { name: "Biryani", price: 17, cat: "rice", note: "Per Serving", desc: "Fragrant, layered basmati rice with traditional aromatic spices. Serving size: 1 pack per person (Includes 2 pcs of chicken)." },
-        { name: "Chicken Pulao", price: 13, cat: "rice", note: "Per Serving", desc: "Mildly spiced rice cooked slowly in a rich chicken broth. Serving size: 1 pack per person (Includes 2 pcs of chicken)." },
-        { name: "Mutton Qabli Pulao", price: 25, cat: "rice", note: "Per Serving", desc: "Authentic Afghan style rice topped with julienne carrots, raisins, and tender mutton chunks. Serving size: 1 pack person." },
-        { name: "Chicken Qabli Pulao", price: 17, cat: "rice", note: "Per Serving", desc: "Aromatic Afghan rice with sweet fried carrots and raisins. Serving size: 1 pack per person (Includes 2 pcs of chicken)." },
-        { name: "Mix Vege Fried Rice", price: 12, cat: "rice", note: "Per Serving", desc: "Wok-tossed premium basmati rice scrambled with crisp seasonal garden vegetables and light house sauces." },
-        { name: "Boiled Rice", price: 5, cat: "rice", note: "Per Serving", desc: "Fluffy, premium long-grain steamed white basmati rice. Serving size: 1 pack container per person." },
-        { name: "Tarke Wale Chawal", price: 6, cat: "rice", note: "Per Plate", desc: "Flavorful basmati rice tempered with a traditional tadka of onions and cumin. Serving size: 1 pack container per person." },
-        { name: "Moong Daal", price: 5, cat: "daal", note: "Per Plate", desc: "Comforting, slow-cooked traditional yellow split mung lentils, finished with a sizzling cumin garlic tadka." },
-        { name: "Masoor Daal", price: 5, cat: "daal", note: "Per Plate", desc: "Classic reddish-orange split lentils simmered smoothly with home spices and tempered with onions." },
-        { name: "Daal Mash", price: 5, cat: "daal", note: "Per Plate", desc: "Perfectly textured, aromatic split white lentils sautéed beautifully with green chilies and ginger garnish." },
-        { name: "Chane Ki Daal", price: 5, cat: "daal", note: "Per Plate", desc: "Hearty split chickpeas slow-simmered in a rich tomato-onion masala paste." },
-        { name: "Samosa (1 pc)", price: 3, cat: "snacks", note: "$3 ea / 4 for $10", desc: "Crispy golden triangular pastry wrapper filled with a savory, perfectly spiced potato mash." },
-        { name: "Samosa (4 pcs)", price: 10, cat: "snacks", note: "Bundle Price", desc: "A bundle pack of 4 crispy golden samosas. Great for sharing!" },
-        { name: "Full Chicken Roast", price: 35, cat: "snacks", note: "", desc: "Whole chicken marinated beautifully in rich house spices and roasted to absolute juicy perfection." },
-        { name: "Chicken Tikka", price: 10, cat: "snacks", note: "Per Tikka", desc: "Juicy bone-in chicken piece infused with traditional tandoori spices and grilled nicely." },
-        { name: "Zinger Burger", price: 13, cat: "snacks", note: "$15 with Fries", desc: "Crispy, extra crunchy fried chicken breast fillet loaded with lettuce and mayo in a soft bun." },
-        { name: "Zinger Burger + Fries", price: 15, cat: "snacks", note: "Combo", desc: "Our signature crunchy chicken zinger burger paired with a side of hot, golden fries." },
-        { name: "Zinger Roll", price: 13, cat: "snacks", note: "", desc: "Crispy fried zinger strips wrapped neatly in a soft flatbread with house sauces and fresh onions." },
-        { name: "Shawarma", price: 13, cat: "snacks", note: "", desc: "Shredded seasoned chicken wrapped in warm pita bread with garlic sauce, mayo, and crunchy pickles." },
-        { name: "Pakora", price: 10, cat: "snacks", note: "One Plate", desc: "Crispy, golden-fried vegetable fritters made in a seasoned chickpea flour batter." },
-        { name: "Alo Tikki", price: 5, cat: "snacks", note: "Per Serving", desc: "Crispy, golden pan-fried potato patties seasoned with traditional herbs and aromatic ground spices." },
-        { name: "Raaiyta / Salad", price: 5, cat: "snacks", note: "", desc: "Cool whipped yogurt mixed with roasted cumin, paired with a crisp garden salad layout." },
-        { name: "Namkeen Gosht (Mutton)", price: 25, cat: "salan", note: "Per Serving", desc: "Traditional, tender mutton slow-cooked to bone-falling perfection in its own savory juices with minimal spices, ginger, and black pepper." },
-        { name: "White Chickpeas", price: 6, cat: "salan", note: "Per Plate", desc: "Tender chickpeas simmered smoothly in a rich, tangy, and deeply spiced onion-tomato gravy." },
-        { name: "Chicken Salan", price: 10, cat: "salan", note: "Per Plate", desc: "Classic home-style chicken curry cooked down in an aromatic gravy. Includes 1 chicken piece per serving." },
-        { name: "Ande Qeema Salan", price: 8, cat: "salan", note: "Per Plate", desc: "Savory minced meat and hard-boiled eggs pan-simmered together with a rich, spiced gravy mixture." },
-        { name: "Alo Qeema Salan", price: 10, cat: "salan", note: "Per Plate", desc: "Savory minced meat and soft diced potatoes cooked together with fresh green chilies and spices." },
-        { name: "Mix Sabzi", price: 8, cat: "salan", note: "Per Plate", desc: "A seasonal medley of fresh garden vegetables sautéed beautifully with traditional herbs." },
-        { name: "Alo Matar Salan", price: 8, cat: "salan", note: "Per Plate", desc: "Sweet green peas and soft potatoes simmered evenly in a savory, spiced tomato-onion curry." },
-        { name: "Roti (Chapati)", price: 2, cat: "roti", note: "Per Chapati", desc: "Soft, freshly rolled whole-wheat flatbread cooked hot on a traditional tawa." },
-        { name: "Roghni Naan", price: 3, cat: "roti", note: "Per Naan", desc: "Soft, pillow-textured tandoori leavened flatbread glazed beautifully with butter and sesame seeds." },
-        { name: "Simple Naan", price: 2, cat: "roti", note: "Per Naan", desc: "Classic, fresh tandoor-baked leavened flatbread. Soft and perfect for scooping up curries." },
-        { name: "Alo Methi Pratha", price: 5, cat: "roti", note: "Per Pratha", desc: "Crispy, flaky layered flatbread stuffed completely with spiced mashed potatoes and fragrant fenugreek leaves." },
-        { name: "Alo Pratha", price: 5, cat: "roti", note: "Per Pratha", desc: "Golden pan-fried flaky flatbread filled generously with a savory, seasoned potato mixture." },
-        { name: "Besan Wala Naan", price: 6, cat: "roti", note: "Per Naan", desc: "Unique flatbread coated in a thick, savory chickpea flour paste with spices and deep-fried until crisp." }
-    ];
-
     let cart = {}; let proofBase64 = ""; let selectedStarRating = 0;
 
-    function renderMenu() {
-        menu.forEach((item, index) => {
-            const list = document.getElementById(`${item.cat}-list`);
-            if (list) {
-                const div = document.createElement('div'); div.className = 'menu-card';
-                let picUrl = item.name.includes('/') ? item.name.replace(/\s*\/\s*/g, '+') : item.name.replace(/ /g, '%20');
-                picUrl += '.jpg';
-                const itemNameLower = item.name.toLowerCase();
-                const needsSpice = !(itemNameLower.includes("raaiyta") || itemNameLower.includes("boiled rice") || itemNameLower === "simple naan" || itemNameLower.includes("roghni naan") || itemNameLower.includes("roti"));
-                
-                div.innerHTML = `
-                    <div class="item-pic-box" onclick="enlargeImage('${picUrl}', '${item.name}')"><img src="${picUrl}" onerror="handlePicError(this)"></div>
-                    <div class="item-details">
-                        <div class="item-info"><strong>${item.name}</strong><small>$${item.price} ${item.note}</small><p class="item-desc">${item.desc}</p></div>
-                        ${needsSpice ? `<select class="spice-select-box" id="spice-select-${index}"><option value="Medium">Medium Spice</option><option value="Mild">Mild Spice</option><option value="Spicy">Spicy Kick</option></select>` : ''}
-                        <button class="add-btn" onclick="addToCartWithSpice('${item.name}', ${item.price}, ${index}, ${needsSpice})">+ Add</button>
-                    </div>
-                `;
-                list.appendChild(div);
-            }
-        });
-    }
     function handlePicError(image) { image.style.display = 'none'; const p = document.createElement('div'); p.className = 'pic-placeholder'; p.innerText = 'Picture Coming soon'; image.parentNode.appendChild(p); image.parentNode.onclick = null; image.parentNode.style.cursor = 'default'; }
-    function enlargeImage(src, alt) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox').style.display = 'flex'; }
+    function enlargeImage(src) { document.getElementById('lightbox-img').src = src; document.getElementById('lightbox').style.display = 'flex'; }
     function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
     function handleFileSelect(input) { if (input.files && input.files[0]) { const r = new FileReader(); r.onload = e => { proofBase64 = e.target.result; document.getElementById('proof-preview-img').src = proofBase64; document.getElementById('proof-preview-container').style.display = 'flex'; }; r.readAsDataURL(input.files[0]); } }
     
@@ -499,7 +487,15 @@
     function closeReview() { document.getElementById('confirm-modal').style.display = 'none'; }
     function exitTrackingScreen() { cart = {}; updateCart(); document.getElementById('tracking-screen').style.display = 'none'; }
     function sendCateringInquiry() { const d = document.getElementById('event-date').value; if (!d) return alert("Select date."); window.open(`sms:+17097309719?body=${encodeURIComponent('Catering Inquiry for ' + d)}`, '_self'); }
-    renderMenu();
+
+    document.querySelectorAll('#stars-row-box i').forEach(star => {
+        star.addEventListener('click', function() {
+            selectedStarRating = parseInt(this.getAttribute('data-rating'));
+            document.querySelectorAll('#stars-row-box i').forEach(s => {
+                s.classList.toggle('selected', parseInt(s.getAttribute('data-rating')) <= selectedStarRating);
+            });
+        });
+    });
 </script>
 </body>
 </html>
